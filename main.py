@@ -25,12 +25,6 @@ def main():
 
         mouse_point = get_mouse_position()
 
-        if is_mouse_button_pressed(MOUSE_LEFT_BUTTON):
-            for rec_ind, rec in enumerate(quoridor_game.tile_squares):
-                if check_collision_point_rec(mouse_point, rec):
-                    if quoridor_game.is_legal_tile_square(rec_ind):
-                        quoridor_game.place_tile(rec_ind, current_orientation)
-
         if is_mouse_button_pressed(MOUSE_RIGHT_BUTTON):
             current_orientation += 1
             current_orientation %= 2
@@ -39,6 +33,18 @@ def main():
         clear_background(RAYWHITE)
 
         quoridor_game.draw()
+
+        for rec_ind, rec in enumerate(quoridor_game.tile_squares):
+            if check_collision_point_rec(mouse_point, rec):
+                if quoridor_game.is_legal_tile_square(rec_ind, current_orientation):
+                    if is_mouse_button_pressed(MOUSE_LEFT_BUTTON):
+                        quoridor_game.place_tile(rec_ind, current_orientation)
+                        quoridor_game.has_legal_moves = False
+
+                    else:
+                        quoridor_game.draw_tile(rec_ind, current_orientation, PURPLE)
+                else:
+                    quoridor_game.draw_tile(rec_ind, current_orientation, RED)
 
         end_drawing()
 

@@ -24,6 +24,9 @@ class QuoridorGame:
         self.player_tiles: List[int] = []
         self.board_tiles: List[Tile] = []
 
+        self.has_legal_moves: bool = False
+        self.legal_moves: List[List[int]] = []
+
         self.board_squares = self.get_board_squares()
         self.tile_squares = self.get_tile_squares()
 
@@ -52,24 +55,27 @@ class QuoridorGame:
                         self.square_width / 4,
                         self.player_col[player_ind])
 
+    def draw_tile(self, rec, ori, col):
+        if ori == 0:
+            draw_rectangle(
+                self.tile_squares[rec].x,
+                self.tile_squares[rec].y - self.square_width,
+                self.border,
+                int(self.square_width * 2 + self.border),
+                col
+            )
+        else:
+            draw_rectangle(
+                self.tile_squares[rec].x - self.square_width,
+                self.tile_squares[rec].y,
+                int(self.square_width * 2 + self.border),
+                self.border,
+                col
+            )
+
     def draw_tiles(self):
         for tile in self.board_tiles:
-            if tile.orientation == 0:
-                draw_rectangle(
-                    self.tile_squares[tile.rec_index].x,
-                    self.tile_squares[tile.rec_index].y - self.square_width,
-                    self.border,
-                    int(self.square_width * 2 + self.border),
-                    PURPLE
-                )
-            else:
-                draw_rectangle(
-                    self.tile_squares[tile.rec_index].x - self.square_width,
-                    self.tile_squares[tile.rec_index].y,
-                    int(self.square_width * 2 + self.border),
-                    self.border,
-                    PURPLE
-                )
+            self.draw_tile(tile.rec_index, tile.orientation, DARKPURPLE)
 
     def set_player_pos(self, players_count):
         pos = []
@@ -119,19 +125,51 @@ class QuoridorGame:
                     self.border
                 ))
 
-        recs.pop(-1)
-        recs.pop(-self.side_squares)
-        recs.pop(self.side_squares)
-        recs.pop(0)
-
         return recs
 
-    def is_legal_tile_square(self, rec_index):
-        for tile in self.board_tiles:
-            if tile.rec_index == rec_index:
-                return False
+    def get_legal_tile_squares(self):
+        orientation_zero = []  # Vertical
+        orientation_one = []  # Horizontal
 
-        return True
+        for tile_index, tile_square in enumerate(self.tile_squares):
+            if tile_index - (self.side_squares + 1) < 0:
+                continue
+
+            if tile_index + (self.side_squares + 1) >= (self.side_squares + 1) * (self.side_squares + 1):
+                continue
+
+            if tile_index - (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if tile.orientation == 0]:
+                continue
+
+            if tile_index + (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if tile.orientation == 0]:
+                continue
+
+            orientation_zero.append(tile_index)
+
+        for tile_index, tile_square in enumerate(self.tile_squares):
+            if int(tile_index / (self.side_squares + 1)) != int((tile_index - 1) / (self.side_squares + 1)):
+                continue
+
+            if int(tile_index / (self.side_squares + 1)) != int((tile_index + 1) / (self.side_squares + 1)):
+                continue
+
+            if tile_index - 1 in [tile.rec_index for tile in self.board_tiles if tile.orientation == 1]:
+                continue
+
+            if tile_index + 1 in [tile.rec_index for tile in self.board_tiles if tile.orientation == 1]:
+                continue
+
+            orientation_one.append(tile_index)
+
+        self.legal_moves = [orientation_zero, orientation_one]
+
+    def is_legal_tile_square(self, rec_index, current_orientation):
+        if not self.has_legal_moves:
+            self.get_legal_tile_squares()
+            self.has_legal_moves = True
+
+        return rec_index in self.legal_moves[current_orientation]
+
 
 class Tile:
     def __init__(self, rec_index, orientation):
