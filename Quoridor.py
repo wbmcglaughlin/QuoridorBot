@@ -1,5 +1,5 @@
 from raylibpy import *
-from typing import List
+from typing import List, Union
 
 
 class QuoridorGame:
@@ -21,8 +21,12 @@ class QuoridorGame:
 
         self.player_pos: List[int] = []
         self.player_col: List[Color] = []
-        self.player_tiles: List[int] = []
+        self.player_tiles: List[int] = [int(total_tiles / players)] * players
         self.board_tiles: List[Tile] = []
+
+        self.player_selected: Union[int, None] = None
+
+        self.turn = 0
 
         self.has_legal_moves: bool = False
         self.legal_moves: List[List[int]] = []
@@ -41,6 +45,14 @@ class QuoridorGame:
         for rec in self.tile_squares:
             draw_rectangle_rec(rec, BROWN)
 
+        draw_text(f'Turn: {self.turn}', 10, 10, 30, BLACK)
+        for i in range(len(self.player_pos)):
+            draw_text(f'Player {i} Tiles: {self.player_tiles[i]}',
+                      300,
+                      i * 25 + 10,
+                      20,
+                      BLACK)
+
         self.draw_players()
 
         self.draw_tiles()
@@ -50,10 +62,16 @@ class QuoridorGame:
 
     def draw_players(self):
         for player_ind, player_pos in enumerate(self.player_pos):
-            draw_circle(self.board_squares[player_pos].x + self.square_width / 2,
-                        self.board_squares[player_pos].y + self.square_width / 2,
-                        self.square_width / 4,
-                        self.player_col[player_ind])
+            if player_ind != self.player_selected:
+                draw_circle(self.board_squares[player_pos].x + self.square_width / 2,
+                            self.board_squares[player_pos].y + self.square_width / 2,
+                            self.square_width / 4,
+                            self.player_col[player_ind])
+            else:
+                draw_circle(get_mouse_x(),
+                            get_mouse_y(),
+                            self.square_width / 4,
+                            self.player_col[player_ind])
 
     def draw_tile(self, rec, ori, col):
         if ori == 0:
