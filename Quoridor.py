@@ -28,8 +28,11 @@ class QuoridorGame:
 
         self.turn = 0
 
-        self.has_legal_moves: bool = False
-        self.legal_moves: List[List[int]] = []
+        self.has_legal_tile_moves: bool = False
+        self.legal_tile_moves: List[List[int]] = []
+
+        self.has_legal_player_moves: bool = False
+        self.player_legal_moves: List[int] = []
 
         self.board_squares = self.get_board_squares()
         self.tile_squares = self.get_tile_squares()
@@ -54,6 +57,12 @@ class QuoridorGame:
                       BLACK)
 
         self.draw_players()
+
+        if not self.has_legal_player_moves:
+            self.get_legal_moves()
+            self.has_legal_player_moves = True
+
+        self.draw_legal_moves()
 
         self.draw_tiles()
 
@@ -129,6 +138,84 @@ class QuoridorGame:
 
         return board_squares
 
+    def get_legal_moves(self):
+        def within_bounds(pos):
+            if self.side_squares * self.side_squares > pos >= 0:
+                return True
+            return False
+
+        def not_blocked(pos, direction, ori):
+            pos_row = int(pos / self.side_squares)
+            pos_col = int(pos % self.side_squares)
+
+            tl = pos_row * (self.side_squares + 1) + pos_col
+            tr = pos_row * (self.side_squares + 1) + pos_col + 1
+            bl = (pos_row + 1) * (self.side_squares + 1) + pos_col
+            br = (pos_row + 1) * (self.side_squares + 1) + pos_col + 1
+
+            bt = [tile.rec_index for tile in self.board_tiles]
+            bo = [tile.orientation for tile in self.board_tiles]
+
+            if direction == 0:
+                if tl in bt:
+                    if bo[bt.index(tl)] == ori:
+                        return False
+                if tr in bt:
+                    if bo[bt.index(tr)] == ori:
+                        return False
+
+            if direction == 1:
+                if bl in bt:
+                    if bo[bt.index(bl)] == ori:
+                        return False
+                if br in bt:
+                    if bo[bt.index(br)] == ori:
+                        return False
+
+            if direction == 2:
+                if bl in bt:
+                    if bo[bt.index(bl)] == ori:
+                        return False
+                if tl in bt:
+                    if bo[bt.index(tl)] == ori:
+                        return False
+
+            if direction == 3:
+                if br in bt:
+                    if bo[bt.index(br)] == ori:
+                        return False
+                if tr in bt:
+                    if bo[bt.index(tr)] == ori:
+                        return False
+
+            return True
+
+        self.player_legal_moves = []
+
+        pos_u = self.player_pos[self.turn] - self.side_squares
+        if within_bounds(pos_u) and not_blocked(self.player_pos[self.turn], 0, 1):
+            self.player_legal_moves.append(pos_u)
+
+        pos_d = self.player_pos[self.turn] + self.side_squares
+        if within_bounds(pos_d) and not_blocked(self.player_pos[self.turn], 1, 1):
+            self.player_legal_moves.append(pos_d)
+
+        pos_l = self.player_pos[self.turn] - 1
+        if within_bounds(pos_l) and not_blocked(self.player_pos[self.turn], 2, 0):
+            self.player_legal_moves.append(pos_l)
+
+        pos_r = self.player_pos[self.turn] + 1
+        if within_bounds(pos_r) and not_blocked(self.player_pos[self.turn], 3, 0):
+            self.player_legal_moves.append(pos_r)
+
+    def draw_legal_moves(self):
+        if self.player_legal_moves is not None:
+            for legal_move in self.player_legal_moves:
+                draw_circle(self.board_squares[legal_move].x + self.square_width / 2,
+                            self.board_squares[legal_move].y + self.square_width / 2,
+                            self.square_width / 8,
+                            BROWN)
+
     def get_tile_squares(self):
         recs = []
 
@@ -156,10 +243,12 @@ class QuoridorGame:
             if tile_index + (self.side_squares + 1) >= (self.side_squares + 1) * (self.side_squares + 1):
                 continue
 
-            if tile_index - (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if tile.orientation == 0]:
+            if tile_index - (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if
+                                                        tile.orientation == 0]:
                 continue
 
-            if tile_index + (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if tile.orientation == 0]:
+            if tile_index + (self.side_squares + 1) in [tile.rec_index for tile in self.board_tiles if
+                                                        tile.orientation == 0]:
                 continue
 
             orientation_zero.append(tile_index)
@@ -179,14 +268,14 @@ class QuoridorGame:
 
             orientation_one.append(tile_index)
 
-        self.legal_moves = [orientation_zero, orientation_one]
+        self.legal_tile_moves = [orientation_zero, orientation_one]
 
     def is_legal_tile_square(self, rec_index, current_orientation):
-        if not self.has_legal_moves:
+        if not self.has_legal_tile_moves:
             self.get_legal_tile_squares()
-            self.has_legal_moves = True
+            self.has_legal_tile_moves = True
 
-        return rec_index in self.legal_moves[current_orientation]
+        return rec_index in self.legal_tile_moves[current_orientation]
 
 
 class Tile:

@@ -40,7 +40,8 @@ def main():
                     if quoridor_game.is_legal_tile_square(rec_ind, current_orientation):
                         if is_mouse_button_pressed(MOUSE_LEFT_BUTTON):
                             quoridor_game.place_tile(rec_ind, current_orientation)
-                            quoridor_game.has_legal_moves = False
+                            quoridor_game.has_legal_tile_moves = False
+                            quoridor_game.has_legal_player_moves = False
 
                             quoridor_game.player_tiles[quoridor_game.turn] -= 1
                             quoridor_game.turn += 1
@@ -55,18 +56,22 @@ def main():
                 quoridor_game.player_selected = quoridor_game.turn
 
         if is_mouse_button_released(MOUSE_LEFT_BUTTON) and quoridor_game.player_selected is not None:
+            old_pos = quoridor_game.player_pos[quoridor_game.turn]
             for rec_ind, rec in enumerate(quoridor_game.board_squares):
                 if check_collision_point_rec(mouse_point, rec):
                     quoridor_game.player_selected = None
                     old_turn = quoridor_game.turn
 
-                    if not quoridor_game.player_pos[quoridor_game.turn] == rec_ind:
-                        quoridor_game.has_legal_moves = False
+                    if not quoridor_game.player_pos[quoridor_game.turn] == rec_ind and rec_ind in quoridor_game.player_legal_moves:
+                        quoridor_game.has_legal_tile_moves = False
                         quoridor_game.turn += 1
                         quoridor_game.turn %= len(quoridor_game.player_pos)
+                        quoridor_game.player_pos[old_turn] = rec_ind
 
-                    quoridor_game.player_pos[old_turn] = rec_ind
-
+                        quoridor_game.has_legal_player_moves = False
+                        quoridor_game.has_legal_tile_moves = False
+                    else:
+                        quoridor_game.player_pos[old_turn] = old_pos
 
         end_drawing()
 
