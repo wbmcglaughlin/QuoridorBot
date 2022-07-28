@@ -54,12 +54,10 @@ def main():
                         # If left mouse button is pressed, place tile
                         if is_mouse_button_pressed(MOUSE_LEFT_BUTTON):
                             quoridor_game.place_tile(rec_ind, current_orientation)
-                            quoridor_game.has_legal_tile_moves = False
-                            quoridor_game.has_legal_player_moves = False
 
                             quoridor_game.player_tiles[quoridor_game.turn] -= 1
-                            quoridor_game.turn += 1
-                            quoridor_game.turn %= len(quoridor_game.player_pos)
+                            quoridor_game.new_turn()
+
                         # If left mouse button is not pressed, display tile
                         else:
                             quoridor_game.draw_tile(rec_ind, current_orientation, PURPLE)
@@ -68,26 +66,7 @@ def main():
                         quoridor_game.draw_tile(rec_ind, current_orientation, RED)
 
         # Moving player with mouse keys
-        if is_key_pressed(KEY_W):
-            new_pos = quoridor_game.player_pos[quoridor_game.turn] - quoridor_game.side_squares
-            if new_pos in quoridor_game.player_legal_moves:
-                quoridor_game.player_pos[quoridor_game.turn] = new_pos
-                quoridor_game.new_turn()
-        elif is_key_pressed(KEY_A):
-            new_pos = quoridor_game.player_pos[quoridor_game.turn] - 1
-            if new_pos in quoridor_game.player_legal_moves:
-                quoridor_game.player_pos[quoridor_game.turn] = new_pos
-                quoridor_game.new_turn()
-        elif is_key_pressed(KEY_S):
-            new_pos = quoridor_game.player_pos[quoridor_game.turn] + quoridor_game.side_squares
-            if new_pos in quoridor_game.player_legal_moves:
-                quoridor_game.player_pos[quoridor_game.turn] = new_pos
-                quoridor_game.new_turn()
-        elif is_key_pressed(KEY_D):
-            new_pos = quoridor_game.player_pos[quoridor_game.turn] + 1
-            if new_pos in quoridor_game.player_legal_moves:
-                quoridor_game.player_pos[quoridor_game.turn] = new_pos
-                quoridor_game.new_turn()
+        quoridor_game.check_arrow_key_move()
 
         # Select a player to move
         if is_mouse_button_pressed(MOUSE_LEFT_BUTTON):

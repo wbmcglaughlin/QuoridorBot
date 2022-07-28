@@ -291,6 +291,28 @@ class QuoridorGame:
                             self.square_width / 8,
                             BROWN)
 
+    def check_arrow_key_move(self):
+        if is_key_pressed(KEY_W):
+            new_pos = self.player_pos[self.turn] - self.side_squares
+            if new_pos in self.player_legal_moves:
+                self.player_pos[self.turn] = new_pos
+                self.new_turn()
+        elif is_key_pressed(KEY_A):
+            new_pos = self.player_pos[self.turn] - 1
+            if new_pos in self.player_legal_moves:
+                self.player_pos[self.turn] = new_pos
+                self.new_turn()
+        elif is_key_pressed(KEY_S):
+            new_pos = self.player_pos[self.turn] + self.side_squares
+            if new_pos in self.player_legal_moves:
+                self.player_pos[self.turn] = new_pos
+                self.new_turn()
+        elif is_key_pressed(KEY_D):
+            new_pos = self.player_pos[self.turn] + 1
+            if new_pos in self.player_legal_moves:
+                self.player_pos[self.turn] = new_pos
+                self.new_turn()
+
     def get_tile_squares(self):
         """
 
