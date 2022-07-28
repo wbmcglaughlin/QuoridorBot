@@ -11,6 +11,16 @@ class QuoridorGame:
                  width: int,
                  border: int):
 
+        """
+
+        :param side_squares: amount of squares on one side
+        :param total_tiles: total tiles shared equally between all players
+        :param players: number of players
+        :param position: board corner position
+        :param width: board width
+        :param border: board height
+        """
+
         self.side_squares = side_squares
         self.tile_count = total_tiles
 
@@ -39,7 +49,22 @@ class QuoridorGame:
 
         self.set_player_pos(players)
 
+    def new_turn(self):
+        """
+
+        :return:
+        """
+        self.turn += 1
+        self.turn %= len(self.player_pos)
+
+        self.has_legal_player_moves = False
+        self.has_legal_tile_moves = False
+
     def draw(self):
+        """
+
+        :return:
+        """
         draw_rectangle(self.position.x, self.position.y, self.width, self.width, GOLD)
 
         for rec in self.board_squares:
@@ -67,9 +92,19 @@ class QuoridorGame:
         self.draw_tiles()
 
     def place_tile(self, rec_index, orientation):
+        """
+
+        :param rec_index: inbetween tile rectangle index
+        :param orientation: orientation of the tile
+        :return:
+        """
         self.board_tiles.append(Tile(rec_index, orientation))
 
     def draw_players(self):
+        """
+
+        :return:
+        """
         for player_ind, player_pos in enumerate(self.player_pos):
             if player_ind != self.player_selected:
                 draw_circle(self.board_squares[player_pos].x + self.square_width / 2,
@@ -83,6 +118,13 @@ class QuoridorGame:
                             self.player_col[player_ind])
 
     def draw_tile(self, rec, ori, col):
+        """
+
+        :param rec: tile rectangle
+        :param ori: tile orientation
+        :param col: tile colour
+        :return:
+        """
         if ori == 0:
             draw_rectangle(
                 self.tile_squares[rec].x,
@@ -101,10 +143,19 @@ class QuoridorGame:
             )
 
     def draw_tiles(self):
+        """
+
+        :return:
+        """
         for tile in self.board_tiles:
             self.draw_tile(tile.rec_index, tile.orientation, DARKPURPLE)
 
     def set_player_pos(self, players_count):
+        """
+
+        :param players_count: amount of players
+        :return:
+        """
         pos = []
         col = []
 
@@ -125,6 +176,10 @@ class QuoridorGame:
         self.player_col = col
 
     def get_board_squares(self):
+        """
+
+        :return:
+        """
         board_squares = []
 
         for j in range(self.side_squares):
@@ -139,12 +194,28 @@ class QuoridorGame:
         return board_squares
 
     def get_legal_moves(self):
+        """
+
+        :return:
+        """
         def within_bounds(pos):
+            """
+
+            :param pos: position on the board
+            :return:
+            """
             if self.side_squares * self.side_squares > pos >= 0:
                 return True
             return False
 
         def not_blocked(pos, direction, ori):
+            """
+
+            :param pos: position on the board
+            :param direction: direction of movement
+            :param ori: orientation of blocking tile
+            :return:
+            """
             pos_row = int(pos / self.side_squares)
             pos_col = int(pos % self.side_squares)
 
@@ -209,6 +280,10 @@ class QuoridorGame:
             self.player_legal_moves.append(pos_r)
 
     def draw_legal_moves(self):
+        """
+
+        :return:
+        """
         if self.player_legal_moves is not None:
             for legal_move in self.player_legal_moves:
                 draw_circle(self.board_squares[legal_move].x + self.square_width / 2,
@@ -217,6 +292,10 @@ class QuoridorGame:
                             BROWN)
 
     def get_tile_squares(self):
+        """
+
+        :return:
+        """
         recs = []
 
         square_width = (self.width - self.border * (self.side_squares + 1)) / self.side_squares
@@ -233,6 +312,10 @@ class QuoridorGame:
         return recs
 
     def get_legal_tile_squares(self):
+        """
+
+        :return:
+        """
         orientation_zero = []  # Vertical
         orientation_one = []  # Horizontal
 
@@ -271,6 +354,12 @@ class QuoridorGame:
         self.legal_tile_moves = [orientation_zero, orientation_one]
 
     def is_legal_tile_square(self, rec_index, current_orientation):
+        """
+
+        :param rec_index: rec index to check if legal tile
+        :param current_orientation: current orientation of the placing tile
+        :return:
+        """
         if not self.has_legal_tile_moves:
             self.get_legal_tile_squares()
             self.has_legal_tile_moves = True
@@ -280,5 +369,10 @@ class QuoridorGame:
 
 class Tile:
     def __init__(self, rec_index, orientation):
+        """
+
+        :param rec_index: tile rectangle index
+        :param orientation: tile orientation
+        """
         self.rec_index = rec_index
         self.orientation = orientation
