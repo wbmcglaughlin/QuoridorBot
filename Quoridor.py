@@ -43,6 +43,7 @@ class QuoridorGame:
 
         self.has_legal_player_moves: bool = False
         self.player_legal_moves: List[int] = []
+        self.distance = []
 
         self.board_squares = self.get_board_squares()
         self.tile_squares = self.get_tile_squares()
@@ -65,7 +66,7 @@ class QuoridorGame:
 
         :return:
         """
-        draw_rectangle(self.position.x, self.position.y, self.width, self.width, GOLD)
+        draw_rectangle(self.position.x, self.position.y, self.width, self.width, Color(220, 220, 220, 255))
 
         for rec in self.board_squares:
             draw_rectangle_rec(rec, LIGHTGRAY)
@@ -81,15 +82,20 @@ class QuoridorGame:
                       20,
                       BLACK)
 
-        self.draw_players()
-
         if not self.has_legal_player_moves:
-            self.get_legal_moves()
+            self.player_legal_moves = self.get_legal_moves(self.player_pos[self.turn])
+            target = [((self.turn + 1) % 2) * self.side_squares * (self.side_squares - 1) + i for i in range(self.side_squares)]
+            self.get_shortest_path(self.player_pos[self.turn], target)
             self.has_legal_player_moves = True
 
-        self.draw_legal_moves()
+        for index, val in enumerate(self.distance):
+            col = Color(255, 255 * val / max(self.distance) / 2, 255, 255)
+            draw_rectangle_rec(self.board_squares[index], col)
+            draw_text(str(val), self.board_squares[index].x, self.board_squares[index].y, 30, WHITE)
 
+        self.draw_legal_moves()
         self.draw_tiles()
+        self.draw_players()
 
     def place_tile(self, rec_index, orientation):
         """
@@ -193,7 +199,46 @@ class QuoridorGame:
 
         return board_squares
 
-    def get_legal_moves(self):
+    def get_shortest_path(self, current_pos, target):
+        distance = [-1] * self.side_squares * self.side_squares
+
+        to_search = [current_pos]
+        distance[current_pos] = 0
+
+        depth = 0
+        while True:
+            new_search = []
+            for pos in to_search:
+                distance[pos] = depth
+                if pos in target:
+                    break
+                for adj in self.get_legal_moves(pos):
+                    if distance[adj] == -1:
+                        new_search.append(adj)
+
+            to_search = new_search
+            depth += 1
+
+            if len(to_search) == 0:
+                break
+
+        self.distance = distance
+
+    def get_adjacent_squares(self, pos):
+        adj = []
+
+        if int((pos + 1) / self.side_squares) == int(pos / self.side_squares):
+            adj.append(pos + 1)
+        if int((pos - 1) / self.side_squares) == int(pos / self.side_squares):
+            adj.append(pos - 1)
+        if pos + self.side_squares < self.side_squares * self.side_squares - 1:
+            adj.append(pos + self.side_squares)
+        if pos - self.side_squares > 0:
+            adj.append(pos - self.side_squares)
+
+        return adj
+
+    def get_legal_moves(self, current_pos):
         """
 
         :return:
@@ -261,23 +306,26 @@ class QuoridorGame:
 
             return True
 
-        self.player_legal_moves = []
+        moves = []
+        adj = self.get_adjacent_squares(current_pos)
 
-        pos_u = self.player_pos[self.turn] - self.side_squares
-        if within_bounds(pos_u) and not_blocked(self.player_pos[self.turn], 0, 1):
-            self.player_legal_moves.append(pos_u)
+        pos_u = current_pos - self.side_squares
+        if within_bounds(pos_u) and not_blocked(current_pos, 0, 1) and pos_u in adj:
+            moves.append(pos_u)
 
-        pos_d = self.player_pos[self.turn] + self.side_squares
-        if within_bounds(pos_d) and not_blocked(self.player_pos[self.turn], 1, 1):
-            self.player_legal_moves.append(pos_d)
+        pos_d = current_pos + self.side_squares
+        if within_bounds(pos_d) and not_blocked(current_pos, 1, 1) and pos_d in adj:
+            moves.append(pos_d)
 
-        pos_l = self.player_pos[self.turn] - 1
-        if within_bounds(pos_l) and not_blocked(self.player_pos[self.turn], 2, 0):
-            self.player_legal_moves.append(pos_l)
+        pos_l = current_pos - 1
+        if within_bounds(pos_l) and not_blocked(current_pos, 2, 0) and pos_l in adj:
+            moves.append(pos_l)
 
-        pos_r = self.player_pos[self.turn] + 1
-        if within_bounds(pos_r) and not_blocked(self.player_pos[self.turn], 3, 0):
-            self.player_legal_moves.append(pos_r)
+        pos_r = current_pos + 1
+        if within_bounds(pos_r) and not_blocked(current_pos, 3, 0) and pos_r in adj:
+            moves.append(pos_r)
+
+        return moves
 
     def draw_legal_moves(self):
         """
