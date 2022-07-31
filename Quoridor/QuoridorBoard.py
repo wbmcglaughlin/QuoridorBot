@@ -1,3 +1,5 @@
+import copy
+
 from raylibpy import *
 from typing import List, Union
 
@@ -37,12 +39,14 @@ class QuoridorBoard:
         self.has_legal_player_moves: bool = False
         self.player_legal_moves: List[int] = []
 
-        self.get_legal_tile_squares()
-
         self.distance = []
         self.shortest_path = []
 
+        self.current_target = None
+
         self.set_player_pos(players)
+        self.get_current_target()
+        self.get_legal_tile_squares()
 
     def make_move(self, move: Move):
         if isinstance(move.type, Tile):
@@ -53,6 +57,11 @@ class QuoridorBoard:
             self.player_pos[self.turn] = move.pos
 
         self.new_turn()
+
+    def get_current_target(self):
+        self.current_target = [((self.turn + 1) % 2) * self.side_squares * (
+                self.side_squares - 1) + i for i in
+                  range(self.side_squares)]
 
     def new_turn(self):
         """
@@ -65,6 +74,8 @@ class QuoridorBoard:
         self.has_legal_player_moves = False
         self.has_legal_tile_moves = False
 
+        self.get_current_target()
+
     def place_tile(self, rec_index, orientation):
         """
 
@@ -74,7 +85,7 @@ class QuoridorBoard:
         """
         self.board_tiles.append(Tile(rec_index, orientation))
 
-    def get_shortest_path(self, current_pos, target):
+    def get_shortest_path(self, current_pos):
         distance = [-1] * self.side_squares * self.side_squares
 
         to_search = [current_pos]
@@ -86,7 +97,7 @@ class QuoridorBoard:
             new_search = []
             for pos in to_search:
                 distance[pos] = depth
-                if pos in target:
+                if pos in self.current_target:
                     shortest_path.append(pos)
                     break
                 for adj in self.get_legal_moves(pos):
@@ -109,7 +120,7 @@ class QuoridorBoard:
                         continue
 
         if len(shortest_path) > 0:
-            if shortest_path[0] not in target:
+            if shortest_path[0] not in self.current_target:
                 shortest_path = []
 
         return distance, shortest_path
@@ -249,6 +260,9 @@ class QuoridorBoard:
         orientation_one = []  # Horizontal
 
         for tile_index in range((self.side_squares + 1) * (self.side_squares + 1)):
+            if tile_index in [tile.rec_index for tile in self.board_tiles]:
+                continue
+
             if tile_index - (self.side_squares + 1) < 0:
                 continue
 
@@ -263,9 +277,15 @@ class QuoridorBoard:
                                                         tile.orientation == 0]:
                 continue
 
+            test_board = copy.deepcopy(self)
+            test_board.make_move(Move(Tile(tile_index, 0), tile_index))
+
             orientation_zero.append(tile_index)
 
         for tile_index in range((self.side_squares + 1) * (self.side_squares + 1)):
+            if tile_index in [tile.rec_index for tile in self.board_tiles]:
+                continue
+
             if int(tile_index / (self.side_squares + 1)) != int((tile_index - 1) / (self.side_squares + 1)):
                 continue
 

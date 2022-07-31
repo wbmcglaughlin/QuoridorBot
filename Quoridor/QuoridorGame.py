@@ -71,7 +71,7 @@ class QuoridorGame:
                     self.current_board.side_squares - 1) + i for i in
                       range(self.current_board.side_squares)]
             self.current_board.distance, self.current_board.shortest_path = self.current_board.get_shortest_path(
-                self.current_board.player_pos[self.current_board.turn], target)
+                self.current_board.player_pos[self.current_board.turn])
             self.current_board.has_legal_player_moves = True
 
         for index, val in enumerate(self.current_board.distance):
@@ -111,7 +111,7 @@ class QuoridorGame:
 
                             # If left mouse button is not pressed, display tile
                             else:
-                                self.draw_tile(rec_ind, self, PURPLE)
+                                self.draw_tile(rec_ind, self.orientation, PURPLE)
                         # Draw red tile, meaning invalid position
                         else:
                             self.draw_tile(rec_ind, self.orientation, RED)
