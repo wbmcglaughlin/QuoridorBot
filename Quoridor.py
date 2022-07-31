@@ -1,5 +1,10 @@
-from raylibpy import *
+import raylibpy as rl
+
+rl.draw_line_ex = lambda start_pos, end_pos, thick, color: rl._rl.DrawLineEx(rl._vec2(start_pos), rl._vec2(end_pos),
+                                                                             rl._float(thick), rl._color(color))
+
 from typing import List, Union
+from raylibpy import *
 
 
 class QuoridorGame:
@@ -21,45 +26,17 @@ class QuoridorGame:
         :param border: board height
         """
 
-        self.side_squares = side_squares
-        self.tile_count = total_tiles
+        self.current_board = QuoridorBoard(side_squares, 0, total_tiles, players)
 
         self.position = position
         self.width = width
         self.border = border
-        self.square_width = (self.width - self.border * (self.side_squares + 1)) / self.side_squares
-
-        self.player_pos: List[int] = []
-        self.player_col: List[Color] = []
-        self.player_tiles: List[int] = [int(total_tiles / players)] * players
-        self.board_tiles: List[Tile] = []
+        self.square_width = (self.width - self.border * (side_squares + 1)) / side_squares
 
         self.player_selected: Union[int, None] = None
 
-        self.turn = 0
-
-        self.has_legal_tile_moves: bool = False
-        self.legal_tile_moves: List[List[int]] = []
-
-        self.has_legal_player_moves: bool = False
-        self.player_legal_moves: List[int] = []
-        self.distance = []
-
         self.board_squares = self.get_board_squares()
         self.tile_squares = self.get_tile_squares()
-
-        self.set_player_pos(players)
-
-    def new_turn(self):
-        """
-
-        :return:
-        """
-        self.turn += 1
-        self.turn %= len(self.player_pos)
-
-        self.has_legal_player_moves = False
-        self.has_legal_tile_moves = False
 
     def draw(self):
         """
@@ -74,54 +51,56 @@ class QuoridorGame:
         for rec in self.tile_squares:
             draw_rectangle_rec(rec, BROWN)
 
-        draw_text(f'Turn: {self.turn}', 10, 10, 30, BLACK)
-        for i in range(len(self.player_pos)):
-            draw_text(f'Player {i} Tiles: {self.player_tiles[i]}',
+        draw_text(f'Turn: {self.current_board.turn}', 10, 10, 30, BLACK)
+        for i in range(len(self.current_board.player_pos)):
+            draw_text(f'Player {i} Tiles: {self.current_board.player_tiles[i]}',
                       300,
                       i * 25 + 10,
                       20,
                       BLACK)
 
-        if not self.has_legal_player_moves:
-            self.player_legal_moves = self.get_legal_moves(self.player_pos[self.turn])
-            target = [((self.turn + 1) % 2) * self.side_squares * (self.side_squares - 1) + i for i in range(self.side_squares)]
-            self.get_shortest_path(self.player_pos[self.turn], target)
-            self.has_legal_player_moves = True
+        if not self.current_board.has_legal_player_moves:
+            self.current_board.player_legal_moves = self.current_board.get_legal_moves(self.current_board.player_pos[self.current_board.turn])
+            target = [((self.current_board.turn + 1) % 2) * self.current_board.side_squares * (self.current_board.side_squares - 1) + i for i in
+                      range(self.current_board.side_squares)]
+            self.current_board.distance, self.current_board.shortest_path = self.current_board.get_shortest_path(self.current_board.player_pos[self.current_board.turn], target)
+            self.current_board.has_legal_player_moves = True
 
-        for index, val in enumerate(self.distance):
-            col = Color(255, 255 * val / max(self.distance) / 2, 255, 255)
+        for index, val in enumerate(self.current_board.distance):
+            col = Color(255, 255 * val / max(self.current_board.distance) / 2, 255, 255)
             draw_rectangle_rec(self.board_squares[index], col)
             draw_text(str(val), self.board_squares[index].x, self.board_squares[index].y, 30, WHITE)
+
+        for index, val in enumerate(self.current_board.shortest_path):
+            if index != 0:
+                last = self.current_board.shortest_path[index - 1]
+                draw_line_ex(Vector2(self.board_squares[val].x + self.board_squares[val].width / 2,
+                                     self.board_squares[val].y + self.board_squares[val].height / 2),
+                             Vector2(self.board_squares[last].x + self.board_squares[last].width / 2,
+                                     self.board_squares[last].y + self.board_squares[last].height / 2),
+                             5,
+                             PURPLE)
 
         self.draw_legal_moves()
         self.draw_tiles()
         self.draw_players()
-
-    def place_tile(self, rec_index, orientation):
-        """
-
-        :param rec_index: inbetween tile rectangle index
-        :param orientation: orientation of the tile
-        :return:
-        """
-        self.board_tiles.append(Tile(rec_index, orientation))
 
     def draw_players(self):
         """
 
         :return:
         """
-        for player_ind, player_pos in enumerate(self.player_pos):
+        for player_ind, player_pos in enumerate(self.current_board.player_pos):
             if player_ind != self.player_selected:
                 draw_circle(self.board_squares[player_pos].x + self.square_width / 2,
                             self.board_squares[player_pos].y + self.square_width / 2,
                             self.square_width / 4,
-                            self.player_col[player_ind])
+                            self.current_board.player_col[player_ind])
             else:
                 draw_circle(get_mouse_x(),
                             get_mouse_y(),
                             self.square_width / 4,
-                            self.player_col[player_ind])
+                            self.current_board.player_col[player_ind])
 
     def draw_tile(self, rec, ori, col):
         """
@@ -153,33 +132,8 @@ class QuoridorGame:
 
         :return:
         """
-        for tile in self.board_tiles:
+        for tile in self.current_board.board_tiles:
             self.draw_tile(tile.rec_index, tile.orientation, DARKPURPLE)
-
-    def set_player_pos(self, players_count):
-        """
-
-        :param players_count: amount of players
-        :return:
-        """
-        pos = []
-        col = []
-
-        if players_count != 2 or players_count != 4:
-            print("Players Count not 2 or 4, setting to 2")
-            players_count = 2
-
-        pos.append(int(self.side_squares / 2))
-        pos.append(self.side_squares * self.side_squares - int(self.side_squares / 2) - 1)
-        col.append(BLUE)
-        col.append(DARKBLUE)
-
-        if players_count == 4:
-            pos.append(self.side_squares * 5)
-            pos.append(self.side_squares * 4 + 1)
-
-        self.player_pos = pos
-        self.player_col = col
 
     def get_board_squares(self):
         """
@@ -188,8 +142,8 @@ class QuoridorGame:
         """
         board_squares = []
 
-        for j in range(self.side_squares):
-            for i in range(self.side_squares):
+        for j in range(self.current_board.side_squares):
+            for i in range(self.current_board.side_squares):
                 rec = Rectangle(self.position.x + (i * (self.square_width + self.border)) + self.border,
                                 self.position.y + (j * (self.square_width + self.border)) + self.border,
                                 self.square_width,
@@ -199,18 +153,98 @@ class QuoridorGame:
 
         return board_squares
 
+    def draw_legal_moves(self):
+        """
+
+        :return:
+        """
+        if self.current_board.player_legal_moves is not None:
+            for legal_move in self.current_board.player_legal_moves:
+                draw_circle(self.board_squares[legal_move].x + self.square_width / 2,
+                            self.board_squares[legal_move].y + self.square_width / 2,
+                            self.square_width / 8,
+                            BROWN)
+
+    def get_tile_squares(self):
+        """
+
+        :return:
+        """
+        recs = []
+
+        square_width = (self.width - self.border * (self.current_board.side_squares + 1)) / self.current_board.side_squares
+
+        for j in range(self.current_board.side_squares + 1):
+            for i in range(self.current_board.side_squares + 1):
+                recs.append(Rectangle(
+                    self.position.x + (i * (square_width + self.border)),
+                    self.position.y + (j * (square_width + self.border)),
+                    self.border,
+                    self.border
+                ))
+
+        return recs
+
+
+class QuoridorBoard:
+    def __init__(self, side_squares, turn, total_tiles, players):
+        self.side_squares = side_squares
+        self.tile_count = total_tiles
+
+        self.turn = turn
+
+        self.player_pos: List[int] = []
+        self.player_col: List[Color] = []
+        self.player_tiles: List[int] = [int(total_tiles / players)] * players
+        self.board_tiles: List[Tile] = []
+
+        self.has_legal_tile_moves: bool = False
+        self.legal_tile_moves: List[List[int]] = []
+
+        self.has_legal_player_moves: bool = False
+        self.player_legal_moves: List[int] = []
+
+        self.get_legal_tile_squares()
+
+        self.distance = []
+        self.shortest_path = []
+
+        self.set_player_pos(players)
+
+    def new_turn(self):
+        """
+
+        :return:
+        """
+        self.turn += 1
+        self.turn %= len(self.player_pos)
+
+        self.has_legal_player_moves = False
+        self.has_legal_tile_moves = False
+
+    def place_tile(self, rec_index, orientation):
+        """
+
+        :param rec_index: inbetween tile rectangle index
+        :param orientation: orientation of the tile
+        :return:
+        """
+        self.board_tiles.append(Tile(rec_index, orientation))
+
     def get_shortest_path(self, current_pos, target):
         distance = [-1] * self.side_squares * self.side_squares
 
         to_search = [current_pos]
         distance[current_pos] = 0
+        shortest_path = []
 
         depth = 0
-        while True:
+        while len(shortest_path) == 0:
             new_search = []
             for pos in to_search:
                 distance[pos] = depth
                 if pos in target:
+                    shortest_path.append(pos)
                     break
                 for adj in self.get_legal_moves(pos):
                     if distance[adj] == -1:
@@ -222,7 +256,20 @@ class QuoridorGame:
             if len(to_search) == 0:
                 break
 
-        self.distance = distance
+        depth -= 1
+        if len(shortest_path) > 0:
+            while shortest_path[-1] != current_pos:
+                for adj in self.get_adjacent_squares(shortest_path[-1]):
+                    if distance[adj] == depth - 1:
+                        shortest_path.append(adj)
+                        depth -= 1
+                        continue
+
+        if len(shortest_path) > 0:
+            if shortest_path[0] not in target:
+                shortest_path = []
+
+        return distance, shortest_path
 
     def get_adjacent_squares(self, pos):
         adj = []
@@ -243,6 +290,7 @@ class QuoridorGame:
 
         :return:
         """
+
         def within_bounds(pos):
             """
 
@@ -327,18 +375,6 @@ class QuoridorGame:
 
         return moves
 
-    def draw_legal_moves(self):
-        """
-
-        :return:
-        """
-        if self.player_legal_moves is not None:
-            for legal_move in self.player_legal_moves:
-                draw_circle(self.board_squares[legal_move].x + self.square_width / 2,
-                            self.board_squares[legal_move].y + self.square_width / 2,
-                            self.square_width / 8,
-                            BROWN)
-
     def check_arrow_key_move(self):
         if is_key_pressed(KEY_W):
             new_pos = self.player_pos[self.turn] - self.side_squares
@@ -361,26 +397,6 @@ class QuoridorGame:
                 self.player_pos[self.turn] = new_pos
                 self.new_turn()
 
-    def get_tile_squares(self):
-        """
-
-        :return:
-        """
-        recs = []
-
-        square_width = (self.width - self.border * (self.side_squares + 1)) / self.side_squares
-
-        for j in range(self.side_squares + 1):
-            for i in range(self.side_squares + 1):
-                recs.append(Rectangle(
-                    self.position.x + (i * (square_width + self.border)),
-                    self.position.y + (j * (square_width + self.border)),
-                    self.border,
-                    self.border
-                ))
-
-        return recs
-
     def get_legal_tile_squares(self):
         """
 
@@ -389,7 +405,7 @@ class QuoridorGame:
         orientation_zero = []  # Vertical
         orientation_one = []  # Horizontal
 
-        for tile_index, tile_square in enumerate(self.tile_squares):
+        for tile_index in range((self.side_squares + 1) * (self.side_squares + 1)):
             if tile_index - (self.side_squares + 1) < 0:
                 continue
 
@@ -406,7 +422,7 @@ class QuoridorGame:
 
             orientation_zero.append(tile_index)
 
-        for tile_index, tile_square in enumerate(self.tile_squares):
+        for tile_index in range((self.side_squares + 1) * (self.side_squares + 1)):
             if int(tile_index / (self.side_squares + 1)) != int((tile_index - 1) / (self.side_squares + 1)):
                 continue
 
@@ -435,6 +451,31 @@ class QuoridorGame:
             self.has_legal_tile_moves = True
 
         return rec_index in self.legal_tile_moves[current_orientation]
+
+    def set_player_pos(self, players_count):
+        """
+
+        :param players_count: amount of players
+        :return:
+        """
+        pos = []
+        col = []
+
+        if players_count != 2 or players_count != 4:
+            print("Players Count not 2 or 4, setting to 2")
+            players_count = 2
+
+        pos.append(int(self.side_squares / 2))
+        pos.append(self.side_squares * self.side_squares - int(self.side_squares / 2) - 1)
+        col.append(BLUE)
+        col.append(DARKBLUE)
+
+        if players_count == 4:
+            pos.append(self.side_squares * 5)
+            pos.append(self.side_squares * 4 + 1)
+
+        self.player_pos = pos
+        self.player_col = col
 
 
 class Tile:
