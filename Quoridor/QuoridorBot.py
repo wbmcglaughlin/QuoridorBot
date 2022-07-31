@@ -7,15 +7,13 @@ from typing import List, Union
 
 class QuoridorBot:
     def __init__(self):
-        pass
+        self.weight = 0
 
     def get_move(self, current_board: QuoridorBoard):
         best_move = None
-        best_move_score = 0
+        best_move_score = self.weight
         current_pos = current_board.player_pos[current_board.turn]
         opposition_pos = current_board.player_pos[(current_board.turn + 1) % len(current_board.player_pos)]
-        current_board.get_legal_moves(current_pos)
-        current_board.get_legal_tile_squares()
 
         for ori, tile_move_pos in enumerate(current_board.legal_tile_moves):
             for tile_pos in tile_move_pos:

@@ -1,3 +1,5 @@
+import time
+
 import raylibpy as rl
 
 rl.draw_line_ex = lambda start_pos, end_pos, thick, color: rl._rl.DrawLineEx(rl._vec2(start_pos), rl._vec2(end_pos),
@@ -53,8 +55,11 @@ class QuoridorGame:
         for rec in self.board_squares:
             draw_rectangle_rec(rec, LIGHTGRAY)
 
-        for rec in self.tile_squares:
-            draw_rectangle_rec(rec, BROWN)
+        for rec_index, rec in enumerate(self.tile_squares):
+            if rec_index in self.current_board.legal_tile_moves[self.orientation]:
+                draw_rectangle_rec(rec, BROWN)
+            else:
+                draw_rectangle_rec(rec, RED)
 
         draw_text(f'Turn: {self.current_board.turn}', 10, 10, 30, BLACK)
         for i in range(len(self.current_board.player_pos)):
@@ -67,9 +72,6 @@ class QuoridorGame:
         if not self.current_board.has_legal_player_moves:
             self.current_board.player_legal_moves = self.current_board.get_legal_moves(
                 self.current_board.player_pos[self.current_board.turn])
-            target = [((self.current_board.turn + 1) % 2) * self.current_board.side_squares * (
-                    self.current_board.side_squares - 1) + i for i in
-                      range(self.current_board.side_squares)]
             self.current_board.distance, self.current_board.shortest_path = self.current_board.get_shortest_path(
                 self.current_board.player_pos[self.current_board.turn])
             self.current_board.has_legal_player_moves = True
@@ -141,9 +143,12 @@ class QuoridorGame:
                         else:
                             self.current_board.player_pos[old_turn] = old_pos
         else:
+            print("Calculating Bot Move")
+            start = time.time()
             bot = self.player_types[self.current_board.turn]
             move = bot.get_move(self.current_board)
             self.current_board.make_move(move)
+            print(f"Finished Calculating: {(time.time() - start):2f} s")
 
     def draw_players(self):
         """

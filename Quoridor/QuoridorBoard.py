@@ -113,7 +113,11 @@ class QuoridorBoard:
         depth -= 1
         if len(shortest_path) > 0:
             while shortest_path[-1] != current_pos:
-                for adj in self.get_adjacent_squares(shortest_path[-1]):
+                adj_sq = self.get_adjacent_squares(shortest_path[-1])
+                if adj_sq is None:
+                    break
+
+                for adj in adj_sq:
                     if distance[adj] == depth - 1:
                         shortest_path.append(adj)
                         depth -= 1
@@ -279,11 +283,17 @@ class QuoridorBoard:
 
             test_board = copy.deepcopy(self)
             test_board.make_move(Move(Tile(tile_index, 0), tile_index))
+            distance, path = test_board.get_shortest_path(test_board.player_pos[test_board.turn])
+            if len(path) == 0:
+                continue
 
             orientation_zero.append(tile_index)
 
         for tile_index in range((self.side_squares + 1) * (self.side_squares + 1)):
             if tile_index in [tile.rec_index for tile in self.board_tiles]:
+                continue
+
+            if tile_index - 1 < 0:
                 continue
 
             if int(tile_index / (self.side_squares + 1)) != int((tile_index - 1) / (self.side_squares + 1)):
@@ -296,6 +306,12 @@ class QuoridorBoard:
                 continue
 
             if tile_index + 1 in [tile.rec_index for tile in self.board_tiles if tile.orientation == 1]:
+                continue
+
+            test_board = copy.deepcopy(self)
+            test_board.make_move(Move(Tile(tile_index, 1), tile_index))
+            distance, path = test_board.get_shortest_path(test_board.player_pos[test_board.turn])
+            if len(path) == 0:
                 continue
 
             orientation_one.append(tile_index)
