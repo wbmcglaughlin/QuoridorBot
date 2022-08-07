@@ -5,9 +5,10 @@ from typing import List, Union
 
 
 class Move:
-    def __init__(self, move_type, pos):
-        self.type: Union[Tile, None] = move_type
+    def __init__(self, move_type, pos, ori=None):
+        self.is_tile: int = move_type
         self.pos: int = pos
+        self.ori: Union[int, None] = ori
 
 
 class Tile:
@@ -49,8 +50,8 @@ class QuoridorBoard:
         self.get_legal_tile_squares()
 
     def make_move(self, move: Move):
-        if isinstance(move.type, Tile):
-            self.place_tile(move.type.rec_index, move.type.orientation)
+        if move.is_tile == 1:
+            self.place_tile(move.pos, move.ori)
             self.player_tiles[self.turn] -= 1
 
         else:
@@ -167,6 +168,7 @@ class QuoridorBoard:
             :param ori: orientation of blocking tile
             :return:
             """
+
             pos_row = int(pos / self.side_squares)
             pos_col = int(pos % self.side_squares)
 
