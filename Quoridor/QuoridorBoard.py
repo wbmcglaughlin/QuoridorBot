@@ -130,6 +130,30 @@ class QuoridorBoard:
 
         return distance, shortest_path
 
+    def does_path_exist(self, current_pos):
+        visited = [-1] * self.side_squares * self.side_squares
+        to_search = [current_pos]
+
+        path_exists = False
+
+        vis_dec = 0
+        while not path_exists:
+            current = to_search.pop()
+            if current in self.current_target:
+                path_exists = True
+                break
+
+            visited[current] = vis_dec
+
+            for adj in self.get_legal_moves(current):
+                if visited[adj] == -1:
+                    to_search.append(adj)
+
+            if len(to_search) == 0:
+                break
+
+        return path_exists, visited
+
     def get_adjacent_squares(self, pos):
         adj = []
 
@@ -217,14 +241,6 @@ class QuoridorBoard:
         moves = []
         adj = self.get_adjacent_squares(current_pos)
 
-        pos_u = current_pos - self.side_squares
-        if within_bounds(pos_u) and not_blocked(current_pos, 0, 1) and pos_u in adj:
-            moves.append(pos_u)
-
-        pos_d = current_pos + self.side_squares
-        if within_bounds(pos_d) and not_blocked(current_pos, 1, 1) and pos_d in adj:
-            moves.append(pos_d)
-
         pos_l = current_pos - 1
         if within_bounds(pos_l) and not_blocked(current_pos, 2, 0) and pos_l in adj:
             moves.append(pos_l)
@@ -232,6 +248,14 @@ class QuoridorBoard:
         pos_r = current_pos + 1
         if within_bounds(pos_r) and not_blocked(current_pos, 3, 0) and pos_r in adj:
             moves.append(pos_r)
+
+        pos_u = current_pos - self.side_squares
+        if within_bounds(pos_u) and not_blocked(current_pos, 0, 1) and pos_u in adj:
+            moves.append(pos_u)
+
+        pos_d = current_pos + self.side_squares
+        if within_bounds(pos_d) and not_blocked(current_pos, 1, 1) and pos_d in adj:
+            moves.append(pos_d)
 
         return moves
 
@@ -285,8 +309,9 @@ class QuoridorBoard:
 
             test_board = copy.deepcopy(self)
             test_board.make_move(Move(Tile(tile_index, 0), tile_index))
-            distance, path = test_board.get_shortest_path(test_board.player_pos[test_board.turn])
-            if len(path) == 0:
+            path_exists, distance = test_board.does_path_exist(test_board.player_pos[test_board.turn])
+
+            if not path_exists:
                 continue
 
             orientation_zero.append(tile_index)
@@ -312,8 +337,8 @@ class QuoridorBoard:
 
             test_board = copy.deepcopy(self)
             test_board.make_move(Move(Tile(tile_index, 1), tile_index))
-            distance, path = test_board.get_shortest_path(test_board.player_pos[test_board.turn])
-            if len(path) == 0:
+            path_exists, distance = test_board.does_path_exist(test_board.player_pos[test_board.turn])
+            if not path_exists:
                 continue
 
             orientation_one.append(tile_index)
